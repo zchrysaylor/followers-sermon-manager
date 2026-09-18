@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { authenticateRequest } from "../lib/auth";
-import { getSermons, putSermons } from "../lib/r2";
+import {
+  getSermonsSnapshot,
+  putSermons,
+  SermonsConflictError,
+} from "../lib/r2";
 import type { Sermon } from "../shared/types";
 import { safeError, safeLog } from "../lib/logger";
 
@@ -95,12 +99,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     safeLog("UPLOAD_COMPLETE", "Saving sermon:", sermon.id);
-    const sermons = await getSermons();
+    const { sermons, etag } = await getSermonsSnapshot();
     sermons.unshift(sermon);
-    await putSermons(sermons);
+    await putSermons(sermons, etag);
 
     return res.status(200).json(sermon);
   } catch (err: any) {
+    if (err instanceof SermonsConflictError) {
+      return res.status(409).json({ error: err.message });
+    }
     safeError("UPLOAD_COMPLETE", err);
     return res.status(500).json({
       error: "Internal server error",

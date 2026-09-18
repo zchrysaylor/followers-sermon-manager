@@ -157,9 +157,17 @@ In Cloudflare Dashboard -> R2 -> your bucket -> CORS, add a rule similar to:
 ]
 ```
 
-### Public Sermon Page
+### Viewing and Editing Sermons
 
-Visit `https://your-app.vercel.app/sermons.html` to see all sermons with audio players.
+After logging in, open **View Sermons** to see all sermons with audio players.
+
+Click **Edit**, to the left of **Delete**, to open a form populated with the stored title, speaker, date, description, tags, duration, and current audio. Change the fields and click **Save Changes**, or **Cancel** to discard edits. Editing is only available on this page; the latest sermon on the upload page has no editing controls.
+
+Audio replacement is optional. Choose an MP3 of up to 200MB to replace it; its duration is calculated automatically and the file uploads directly to R2. The sermon keeps its existing ID and creation date. Previous audio files remain available for podcast clients with cached feed URLs.
+
+Saved edits update `sermons.json`, which is used to generate the RSS feed. Cached feeds and podcast apps may take time to refresh.
+
+Overlapping saves are protected by R2 conditional writes. If another upload, edit, or deletion changes the list while your request is saving, it returns a conflict; retry the save. An edit form left open while someone else edits the same sermon still contains its original field values, so reopen it to pick up those changes before editing.
 
 ### Podcast RSS Feed
 
@@ -234,6 +242,15 @@ The `limit` parameter controls how many sermons to display (default is 5).
 - Query params: `?page=N&limit=M` for pagination
 - Public endpoint, no authentication required
 
+### PUT /api/update
+
+- Updates an existing sermon without creating a new episode
+- Requires a valid admin session cookie (set by `POST /api/login`)
+- JSON fields: `id`, `title`, `description`, `speaker`, `date`, `durationSeconds`, `keywords` (array; use `[]` to clear tags)
+- Optional replacement fields: `audioUrl`, `audioFileSize`, supplied together after uploading through `/api/upload-url`; the API verifies the uploaded object
+- Returns the updated sermon; unknown IDs return 404 and invalid fields return 400
+- Returns 409 if the sermon list changes during the save, leaving the newer data intact
+
 ### DELETE /api/delete
 
 - Delete a sermon by ID
@@ -245,7 +262,7 @@ The `limit` parameter controls how many sermons to display (default is 5).
 - The `ADMIN_PASSWORD` is a simple shared secret. Keep it secure.
 - The app uses an HTTP-only session cookie (not readable by JS) to avoid storing passwords in browser storage.
 - Basic in-memory rate limiting is applied to failed auth attempts.
-- Only authenticated requests can upload or delete sermons.
+- Only authenticated requests can upload, edit, or delete sermons.
 - File uploads are limited to 200MB.
 - Only MP3 files are accepted.
 
@@ -267,6 +284,8 @@ To modify API routes:
 
 1. Edit files in `api/` or `lib/`
 2. Changes are automatically compiled by Vercel
+
+Run `bun run test` to compile the API and run the update regression tests using Node's built-in test runner. These tests use mocked R2 storage and do not access production data.
 
 ## Future Enhancements
 

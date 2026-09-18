@@ -24,6 +24,7 @@
       </header>
 
       <main>
+        <p id="sermons-message" class="message hidden" role="status"></p>
         <div id="sermons-container">
           <p class="loading">Loading sermons...</p>
         </div>
@@ -33,6 +34,86 @@
         </div>
       </main>
     </div>
+
+    <dialog id="edit-dialog" aria-labelledby="edit-heading">
+      <h2 id="edit-heading">Edit Sermon</h2>
+      <form id="edit-form">
+        <fieldset id="edit-fields">
+          <div class="form-group">
+            <label for="edit-title">Sermon Title</label>
+            <input type="text" id="edit-title" name="title" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-speaker">Speaker</label>
+            <input type="text" id="edit-speaker" name="speaker" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-date">Date</label>
+            <input type="date" id="edit-date" name="date" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-description">Description</label>
+            <textarea
+              id="edit-description"
+              name="description"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="edit-keywords">Tags (comma-separated)</label>
+            <input
+              type="text"
+              id="edit-keywords"
+              name="keywords"
+              placeholder="e.g., colossians, acts, romans"
+            />
+            <small class="help-text"
+              >Add tags to organize sermons into playlists</small
+            >
+          </div>
+          <div class="form-group">
+            <label for="edit-duration">Duration (seconds)</label>
+            <input
+              type="number"
+              id="edit-duration"
+              name="durationSeconds"
+              min="1"
+              step="1"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-current-audio">Current Audio</label>
+            <a id="edit-audio-link" target="_blank" rel="noopener"
+              >Open current audio</a
+            >
+            <audio id="edit-current-audio" controls></audio>
+          </div>
+          <div class="form-group">
+            <label for="edit-audio">Replace Audio File (MP3)</label>
+            <input
+              type="file"
+              id="edit-audio"
+              accept=".mp3,audio/mpeg"
+              aria-describedby="edit-audio-help"
+            />
+            <small id="edit-audio-help" class="help-text"
+              >Optional. Keep this empty to use the current audio. Maximum
+              200MB.</small
+            >
+            <p id="edit-duration-info" class="info hidden" role="status"></p>
+          </div>
+          <div class="edit-form-actions">
+            <button type="submit" id="edit-save">Save Changes</button>
+            <button type="button" id="edit-cancel" class="secondary">
+              Cancel
+            </button>
+          </div>
+        </fieldset>
+        <p id="edit-message" class="message hidden" role="status"></p>
+      </form>
+    </dialog>
 
     <script type="module" src="/js/src/sermons.js"></script>
   </body>

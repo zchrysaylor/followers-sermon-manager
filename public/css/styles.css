@@ -84,6 +84,7 @@ label {
 input[type="text"],
 input[type="password"],
 input[type="date"],
+input[type="number"],
 input[type="file"],
 textarea {
   width: 100%;
@@ -263,9 +264,52 @@ audio {
 }
 
 .sermon-actions {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #ecf0f1;
+}
+
+/* Sermon editor */
+#edit-dialog {
+  margin: auto;
+  width: min(700px, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 2rem;
+  border: none;
+  border-radius: 8px;
+  background: #eae8e1;
+  color: #333;
+}
+
+#edit-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+body:has(#edit-dialog[open]) {
+  overflow: hidden;
+}
+
+#edit-fields {
+  border: none;
+  min-width: 0;
+}
+
+#edit-audio-link {
+  color: #258e89;
+  overflow-wrap: anywhere;
+}
+
+.edit-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.edit-form-actions button.secondary {
+  margin-left: 0;
 }
 
 .sermon-actions button {
@@ -328,6 +372,10 @@ audio {
   }
 
   section {
+    padding: 1.5rem;
+  }
+
+  #edit-dialog {
     padding: 1.5rem;
   }
 

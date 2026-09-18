@@ -5,7 +5,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Sermon, SermonsData } from "../shared/types";
+import type { Sermon, SermonsData } from "../shared/types";
 
 export const r2 = new S3Client({
   region: "auto",
@@ -20,6 +20,13 @@ export const BUCKET = process.env.R2_BUCKET_NAME!;
 export const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 export async function getSermons(): Promise<Sermon[]> {
+  return (await getSermonsSnapshot()).sermons;
+}
+
+export async function getSermonsSnapshot(): Promise<{
+  sermons: Sermon[];
+  etag: string | null;
+}> {
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET,
@@ -27,26 +34,48 @@ export async function getSermons(): Promise<Sermon[]> {
     });
     const response = await r2.send(command);
     const body = await response.Body?.transformToString();
-    if (!body) return [];
-    const data: SermonsData = JSON.parse(body);
-    return data.sermons || [];
+    const data: SermonsData = body ? JSON.parse(body) : { sermons: [] };
+    // R2 supplies the object version as an ETag. Never write unconditionally.
+    if (!response.ETag) throw new Error("Missing sermons ETag");
+    return { sermons: data.sermons || [], etag: response.ETag };
   } catch (error: any) {
     if (error.name === "NoSuchKey") {
-      return [];
+      return { sermons: [], etag: null };
     }
     throw error;
   }
 }
 
-export async function putSermons(sermons: Sermon[]): Promise<void> {
+export class SermonsConflictError extends Error {
+  constructor() {
+    super("Sermons changed while saving. Please try again.");
+    this.name = "SermonsConflictError";
+  }
+}
+
+export async function putSermons(
+  sermons: Sermon[],
+  etag: string | null,
+): Promise<void> {
   const data: SermonsData = { sermons };
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: "sermons.json",
     Body: JSON.stringify(data, null, 2),
     ContentType: "application/json",
+    ...(etag === null ? { IfNoneMatch: "*" } : { IfMatch: etag }),
   });
-  await r2.send(command);
+  try {
+    await r2.send(command);
+  } catch (error: any) {
+    if (
+      error.$metadata?.httpStatusCode === 412 ||
+      error.name === "PreconditionFailed"
+    ) {
+      throw new SermonsConflictError();
+    }
+    throw error;
+  }
 }
 
 export async function uploadAudio(

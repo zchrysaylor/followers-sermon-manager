@@ -5,7 +5,8 @@ import { authenticateRequest } from "../lib/auth";
 import {
   r2,
   BUCKET,
-  getSermons,
+  getSermonsSnapshot,
+  SermonsConflictError,
   putSermons,
   uploadAudio,
   PUBLIC_URL,
@@ -226,8 +227,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Read current sermons, add new one, and save
     safeLog("UPLOAD", "Fetching existing sermons...");
     let sermons: Sermon[];
+    let etag: string | null;
     try {
-      sermons = await getSermons();
+      ({ sermons, etag } = await getSermonsSnapshot());
       safeLog("UPLOAD", "Found", sermons.length, "existing sermons");
     } catch (getErr: any) {
       safeError("UPLOAD_GETSERMONS", getErr);
@@ -237,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     sermons.unshift(sermon); // Add to beginning (newest first)
     safeLog("UPLOAD", "Saving sermons list...");
     try {
-      await putSermons(sermons);
+      await putSermons(sermons, etag);
       safeLog("UPLOAD", "Sermons saved successfully");
     } catch (putErr: any) {
       safeError("UPLOAD_PUTSERMONS", putErr);
@@ -247,6 +249,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     safeLog("UPLOAD", "Upload completed successfully");
     return res.status(200).json(sermon);
   } catch (error: any) {
+    if (error instanceof SermonsConflictError) {
+      return res.status(409).json({ error: error.message });
+    }
     safeError("UPLOAD", error);
     return res.status(500).json({
       error: "Internal server error",
