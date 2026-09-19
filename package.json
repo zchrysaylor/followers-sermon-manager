@@ -5,8 +5,10 @@
   "scripts": {
     "dev:ts": "tsc --watch",
     "build": "tsc",
+    "check": "tsc && tsc -p tsconfig.api.json && node --test tests/*.test.cjs",
     "test": "tsc -p tsconfig.api.json && node --test tests/*.test.cjs",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "deploy:cloud": "vercel --prod --yes --token=\"$VERCEL_TOKEN\""
   },
   "devDependencies": {
     "@types/busboy": "^1.5.0",

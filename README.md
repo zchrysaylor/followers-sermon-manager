@@ -87,17 +87,23 @@ Create a `podcastMeta.json` file in your R2 bucket with your church's informatio
 
 ### 3. Environment Variables
 
-Set these in Vercel's project settings (and in a `.env.local` file for local development):
+Copy `.env.example` to `.env.local` for local development, then replace every
+placeholder. Set the same values in Vercel's project settings. Do not commit
+`.env.local` or put real credentials in `.env.example`.
 
 ```
 R2_ACCOUNT_ID=your_cloudflare_account_id
 R2_ACCESS_KEY_ID=your_r2_access_key
 R2_SECRET_ACCESS_KEY=your_r2_secret_key
 R2_BUCKET_NAME=sermons
- R2_PUBLIC_URL=https://pub-xxxx.r2.dev
- ADMIN_PASSWORD=choose_a_strong_password_here
- ADMIN_SESSION_SECRET=optional_random_string_for_cookie_signing
+R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+ADMIN_PASSWORD=choose_a_strong_password_here
+ADMIN_SESSION_SECRET=choose_a_different_random_string_here
 ```
+
+Use independent strong values for `ADMIN_PASSWORD` and
+`ADMIN_SESSION_SECRET`. The latter signs session cookies and should not be the
+administrator password.
 
 ### 4. Installation & Build
 
@@ -118,6 +124,71 @@ bun install -g vercel
 # Run locally
 vercel dev
 ```
+
+### Codex Cloud Development
+
+The repository includes an `AGENTS.md` with the project layout, commands,
+coding conventions, and security guidance that Codex automatically uses while
+working in this repository. The lockfile and `packageManager` field identify Bun
+as the package manager.
+
+Create a Codex Cloud environment for this repository with the following setup
+script:
+
+```bash
+bun install --frozen-lockfile
+```
+
+No application secrets are needed to compile the project or run the automated
+tests; the tests mock R2. Leave production credentials out of routine Codex
+tasks. If a task explicitly requires live R2 or Vercel access, add only the
+variables from `.env.example` as encrypted environment secrets in the Codex
+Cloud environment. Never paste secret values into a prompt or commit them.
+
+Use this command as the environment's validation command, or ask Codex to run it
+after making changes:
+
+```bash
+bun run check
+```
+
+It compiles both the frontend and API TypeScript configurations before running
+the test suite. For browser testing, `bunx vercel dev` starts the application
+locally; live API requests require the applicable environment variables.
+
+#### Production deployment from Codex Cloud
+
+Do not put deployment in the Codex setup script: setup runs while preparing the
+environment, not when a reviewed change is ready for release. This repository
+has no staging environment, so every deployment command below immediately
+updates the production website. Codex should deploy only when you explicitly
+ask it to do so.
+
+The existing `bun run deploy` command remains appropriate on a linked local
+checkout where `vercel login` has already authenticated the CLI. Bun resolves
+the project-local Vercel executable used by the package script, so `bunx` is not
+needed.
+
+For an unattended Codex Cloud deployment, add these values to the Codex Cloud
+environment rather than committing `.vercel/project.json` or credentials:
+
+- `VERCEL_TOKEN` — an access token for the Vercel account that owns the project.
+- `VERCEL_ORG_ID` — the team or user ID recorded by `vercel link`.
+- `VERCEL_PROJECT_ID` — the project ID recorded by `vercel link`.
+
+Keep `VERCEL_TOKEN` as an encrypted secret. The two IDs can be regular
+environment variables. The task environment must also allow outbound network
+access to Vercel. After the change has been reviewed and you have explicitly
+requested a production release, Codex can run:
+
+```bash
+bun run deploy:cloud
+```
+
+The cloud-specific script supplies the token and accepts Vercel's setup prompts
+non-interactively. `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` identify the existing
+project, preventing the unattended command from creating or selecting a
+different project.
 
 ### 6. Deployment
 

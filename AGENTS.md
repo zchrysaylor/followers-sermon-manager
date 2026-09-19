@@ -10,6 +10,10 @@ Package manager: **Bun** (`bun install`).
 - `bunx tsc -p tsconfig.api.json` — compile API and shared server-side TypeScript separately.
 - `bun run test` — compile the API, then run Node's test runner.
 
+Never run `bun run deploy` or `bun run deploy:cloud` proactively. They deploy
+directly to production; run one only when the user explicitly asks for a
+deployment after confirming the changes have been reviewed and merged.
+
 Never log sensitive data; redact authorization and cookie headers.
 
 ## Task-specific guidance
